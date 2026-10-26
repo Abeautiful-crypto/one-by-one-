@@ -1,0 +1,17 @@
+# 编译产物
+app.exe
+app
+
+# SQLite 数据库（运行时生成）
+*.db
+*.db-shm
+*.db-wal
+
+# 日志
+server.err
+server.log
+
+# 临时测试文件
+coupon_create.json
+stations.json
+test_import.csv

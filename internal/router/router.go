@@ -120,6 +120,7 @@ func Setup(cfg *config.Config) *gin.Engine {
 		// 工单04：订单（用户视角）
 		auth.POST("/orders", orderH.CreateOrder)
 		auth.POST("/orders/:id/pay", orderH.PayOrder)
+		auth.POST("/orders/:id/status", orderH.AdvanceOrder) // 推进状态 paid->ongoing->finished
 		auth.POST("/orders/:id/cancel", orderH.CancelOrder)
 		auth.POST("/reviews", orderH.CreateReview) // 双向评价
 

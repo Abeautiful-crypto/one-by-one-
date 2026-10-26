@@ -255,6 +255,58 @@ func (h *OrderHandler) GetOrder(c *gin.Context) {
 	resp.OK(c, gin.H{"order": order, "driver": driver, "statusLogs": logs})
 }
 
+// AdvanceOrder 推进订单状态（工单04：订单状态流转）
+// 允许流转：paid -> ongoing -> finished（向前推进，不允许倒退）。
+// 权限：订单所属用户或运营人员（staff）。
+func (h *OrderHandler) AdvanceOrder(c *gin.Context) {
+	id, err := parseUint(c.Param("id"))
+	if err != nil {
+		resp.BadRequest(c, "id 非法")
+		return
+	}
+	var req struct {
+		Status string `json:"status" binding:"required,oneof=ongoing finished"`
+		Note   string `json:"note"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		resp.BadRequest(c, "参数校验失败(Validator): "+err.Error())
+		return
+	}
+	var order model.Order
+	if err := model.DB.First(&order, id).Error; err != nil {
+		resp.NotFound(c, "订单不存在")
+		return
+	}
+	if !hasStaffRole(c) && order.UserID != middleware.GetUserID(c) {
+		resp.Forbidden(c, "无权操作该订单")
+		return
+	}
+	// 状态机校验（工单04：状态流转）
+	allowed := map[string][]string{
+		model.OrderPending:   {model.OrderPaid, model.OrderCancelled},
+		model.OrderPaid:      {model.OrderOngoing, model.OrderCancelled},
+		model.OrderOngoing:   {model.OrderFinished, model.OrderCancelled},
+		model.OrderFinished:  {},
+		model.OrderCancelled: {},
+	}
+	ok := false
+	for _, n := range allowed[order.Status] {
+		if n == req.Status {
+			ok = true
+			break
+		}
+	}
+	if !ok {
+		resp.BadRequest(c, "无效的状态流转: "+order.Status+" -> "+req.Status)
+		return
+	}
+	if err := changeOrderStatus(&order, req.Status, req.Note, middleware.GetUsername(c)); err != nil {
+		resp.ServerError(c, err.Error())
+		return
+	}
+	resp.OK(c, gin.H{"order": order})
+}
+
 // CancelOrder 取消订单（标注取消原因）
 func (h *OrderHandler) CancelOrder(c *gin.Context) {
 	id, err := parseUint(c.Param("id"))

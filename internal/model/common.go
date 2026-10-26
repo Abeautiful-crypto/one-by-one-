@@ -34,11 +34,24 @@ func InitDB(cfg *config.Config) {
 	case "mysql":
 		DB, err = gorm.Open(mysql.Open(cfg.DBDSN), gormCfg)
 	default:
-		DB, err = gorm.Open(sqlite.Open("ride_hailing.db"), gormCfg)
+		// SQLite：通过 DSN 的 _pragma 让每个连接自动应用 PRAGMA，避免 SQLITE_BUSY 写锁冲突（并发可靠性）
+		dsn := "file:ride_hailing.db?_pragma=busy_timeout(8000)&_pragma=journal_mode(WAL)&_pragma=foreign_keys(1)"
+		DB, err = gorm.Open(sqlite.Open(dsn), gormCfg)
 	}
 	if err != nil {
 		log.Fatalf("数据库连接失败: %v", err)
 	}
+	// 连接池：SQLite 为单机文件库，写操作全局互斥；设为单连接可彻底避免 SQLITE_BUSY。
+	// 生产环境建议 DB_DRIVER=mysql 以获得更好并发能力。
+	sqlDB, _ := DB.DB()
+	if cfg.DBDriver == "mysql" {
+		sqlDB.SetMaxOpenConns(50)
+		sqlDB.SetMaxIdleConns(10)
+	} else {
+		sqlDB.SetMaxOpenConns(1)
+		sqlDB.SetMaxIdleConns(1)
+	}
+	sqlDB.SetConnMaxLifetime(time.Hour)
 	if err := DB.AutoMigrate(allModels()...); err != nil {
 		log.Fatalf("数据库迁移失败: %v", err)
 	}
