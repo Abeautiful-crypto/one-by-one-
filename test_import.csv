@@ -1,0 +1,6 @@
+username,realName,phone,email,idCard,role
+zhangsan,张三,13800000001,zhang@example.com,110101199001011234,carpool_driver
+lisi,李四,13900000002,li@example.com,110101199001011235,passenger
+wangwu,王五,badphone,wang@example.com,110101199001011236,bus_driver
+zhaoliu,赵六,13700000004,notanemail,110101199001011237,passenger
+admin,管理员,13800000000,admin@example.com,110101199001011238,passenger
