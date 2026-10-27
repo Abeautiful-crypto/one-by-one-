@@ -70,6 +70,9 @@ func allModels() []interface{} {
 		&Transaction{}, &Bill{}, &Anomaly{}, &Dispute{},
 		&UserVisit{},
 		&ExportTask{}, &OperationLog{},
+		// 网约车工单（10/11/15/16/17）
+		&RideOrder{}, &TripBill{}, &OrderAudit{}, &DispatchConfig{}, &DispatchLog{}, &DispatchConfigHistory{},
+		&FloodReport{}, &ShelterPoint{}, &WeatherAlert{}, &IdemKey{}, &TripTrace{},
 	}
 }
 

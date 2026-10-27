@@ -2,7 +2,7 @@
 app.exe
 app
 
-# SQLite 数据库（运行时生成）
+# SQLite 运行时数据库
 *.db
 *.db-shm
 *.db-wal
@@ -15,3 +15,6 @@ server.log
 coupon_create.json
 stations.json
 test_import.csv
+
+# IDE
+.idea/
