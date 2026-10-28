@@ -401,7 +401,15 @@ function setConn(o){document.getElementById("connDot").className="dot"+(o?" on":
 function setWho(){const w=[];if(state.admin)w.push("admin");if(state.driver)w.push("driverA");document.getElementById("who").textContent=w.length?("已登录: "+w.join("/")):"未登录";}
 function esc(s){return String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
 function fmt(v){if(v===null||v===undefined)return "—";if(typeof v==="object")return esc(JSON.stringify(v));return esc(v);}
-function tbl(arr){if(!Array.isArray(arr))return "<pre>"+esc(JSON.stringify(arr,null,2))+"</pre>";if(!arr.length)return '<div class="muted">无数据</div>';
+function tbl(d){
+  // 兼容分页包装 {list,...} / {data,...} 与裸数组/对象
+  let arr=d;
+  if(d&&typeof d==="object"&&!Array.isArray(d)){
+    if(Array.isArray(d.list)) arr=d.list;
+    else if(Array.isArray(d.data)) arr=d.data;
+  }
+  if(!Array.isArray(arr))return "<pre>"+esc(JSON.stringify(d,null,2))+"</pre>";
+  if(!arr.length)return '<div class="muted">无数据</div>';
   const cols=[...new Set(arr.flatMap(o=>Object.keys(o||{})))];
   const head=cols.map(c=>`<th>${c}</th>`).join("");
   const body=arr.map(r=>"<tr>"+cols.map(c=>`<td>${fmt(r[c])}</td>`).join("")+"</tr>").join("");
@@ -439,12 +447,22 @@ document.addEventListener("click",e=>{
       .catch(err=>{card.querySelector(".rp-out").textContent="错误: "+err.message;toast("请求失败: "+err.message,false);});
   }
 });
-// data-get 按钮：把接口填入所在 section 的通用面板并发送
-document.querySelectorAll("[data-get]").forEach(b=>b.onclick=()=>{
+// data-get 按钮：在所在 section 的可见结果区渲染表格（不再只投到远处的调试面板）
+const secOut={"tab-w01":"w01Out","tab-w05":"w05Out","tab-w02":"w02Out","tab-w03":"w03Out","tab-w04":"w04Out","tab-w06":"w06Out","tab-w07":"w07Out","tab-w10":"aiOut"};
+document.querySelectorAll("[data-get]").forEach(b=>b.onclick=async()=>{
   const sec=b.closest("section");const path=b.dataset.get;
-  const rp=sec.querySelector(".raw .rp-path");
-  if(rp){rp.value=path;sec.querySelector(".raw .rp-method").value="GET";sec.querySelector(".raw .rp-send").click();}
-  else api("GET",path,null,state.admin).then(()=>toast("OK",true)).catch(e=>toast(e.message,false));
+  const outId=secOut[sec.id];
+  const tkSel=sec.querySelector(".raw .rp-token");
+  const tk=tkSel?tkSel.value:"admin";
+  const token=tk==="admin"?state.admin:(tk==="driver"?state.driver:null);
+  try{
+    const d=await api("GET",path,null,token);
+    const o=outId?document.getElementById(outId):null;
+    if(o){ if(o.tagName==="PRE"){o.textContent=JSON.stringify(d,null,2);} else {o.classList.remove("hidden");o.innerHTML=tbl(d);} }
+    const rp=sec.querySelector(".raw .rp-path"); if(rp){rp.value=path;sec.querySelector(".raw .rp-method").value="GET";}
+    const rpo=sec.querySelector(".raw .rp-out"); if(rpo)rpo.textContent=JSON.stringify(d,null,2);
+    toast("已加载 "+path,true);
+  }catch(e){toast(e.message,false);}
 });
 document.querySelectorAll("[data-flow]").forEach(b=>b.onclick=()=>{const no=document.getElementById("dFlowNo").value.trim();if(!no)return toast("请填订单号",false);
   api("POST",`/ride-orders/${no}/${b.dataset.flow}`,{},state.driver).then(d=>{document.getElementById("dFlowOut").textContent="✅ "+JSON.stringify(d);toast("已执行 "+b.dataset.flow,true);}).catch(e=>{document.getElementById("dFlowOut").textContent="❌ "+e.message;toast(e.message,false);});});
