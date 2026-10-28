@@ -66,6 +66,7 @@ func Setup(cfg *config.Config) *gin.Engine {
 
 	// 工单18：数字人联调前端（Live2D 渲染由前端 Node 项目负责；此处提供联调页与静态资源）
 	r.Static("/web", "./web")
+	r.GET("/", func(c *gin.Context) { c.Redirect(302, "/web/index.html") })
 	r.GET("/dh", func(c *gin.Context) { c.Redirect(302, "/web/digital-human.html") })
 
 	// ---------- 认证接口 ----------

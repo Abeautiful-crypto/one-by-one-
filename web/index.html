@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>网约车全栈系统 · 整体前端演示</title>
+<style>
+  :root{
+    --bg:#0b1220; --panel:#162034; --panel2:#1d2a44; --line:#2b3a55;
+    --txt:#e6edf6; --muted:#93a4bf; --accent:#38bdf8; --accent2:#a78bfa;
+    --ok:#34d399; --warn:#fbbf24; --err:#f87171;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:radial-gradient(1200px 600px at 80% -10%,rgba(56,189,248,.12),transparent),radial-gradient(900px 500px at -10% 10%,rgba(167,139,250,.12),transparent),var(--bg);color:var(--txt);}
+  header{display:flex;align-items:center;justify-content:space-between;padding:14px 22px;
+    background:rgba(11,18,32,.8);border-bottom:1px solid var(--line);backdrop-filter:blur(10px);position:sticky;top:0;z-index:20}
+  header h1{font-size:17px;margin:0;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:800}
+  .status{display:flex;gap:12px;align-items:center;font-size:13px;color:var(--muted)}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--err);box-shadow:0 0 8px var(--err)}
+  .dot.on{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+  .layout{display:flex;min-height:calc(100vh - 60px)}
+  nav{width:236px;padding:14px 10px;border-right:1px solid var(--line);background:rgba(11,18,32,.55);overflow:auto;max-height:calc(100vh - 60px)}
+  nav .grp{font-size:11px;color:#64748b;padding:14px 12px 6px;letter-spacing:1.5px;font-weight:700}
+  nav button{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:transparent;border:0;color:var(--muted);
+    padding:9px 12px;border-radius:10px;cursor:pointer;font-size:13.5px;margin-bottom:3px;transition:.15s}
+  nav button:hover{background:var(--panel);color:var(--txt)}
+  nav button.active{background:linear-gradient(90deg,rgba(56,189,248,.18),rgba(167,139,250,.16));color:#fff;border-left:3px solid var(--accent)}
+  nav .tag{font-size:10px;padding:1px 6px;border-radius:6px;background:var(--panel2);color:#9fb3d1;margin-left:auto}
+  main{flex:1;padding:22px;overflow:auto;max-height:calc(100vh - 60px)}
+  .card{background:linear-gradient(180deg,rgba(29,42,68,.65),rgba(22,32,52,.65));border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:16px}
+  .card h2{margin:0 0 3px;font-size:16px}
+  .card .sub{color:var(--muted);font-size:13px;margin-bottom:14px}
+  .grid{display:grid;gap:12px}
+  .grid.c2{grid-template-columns:1fr 1fr}.grid.c3{grid-template-columns:repeat(3,1fr)}.grid.c4{grid-template-columns:repeat(4,1fr)}
+  .stat{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:14px}
+  .stat .v{font-size:24px;font-weight:800;color:#fff}.stat .l{color:var(--muted);font-size:12px;margin-top:3px}
+  .btn{background:linear-gradient(90deg,var(--accent),var(--accent2));border:0;color:#0b1220;font-weight:700;
+    padding:8px 15px;border-radius:9px;cursor:pointer;font-size:13px}
+  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--txt);font-weight:600}
+  .btn.sm{padding:6px 11px;font-size:12px}.btn:disabled{opacity:.4;cursor:not-allowed}
+  label{display:block;font-size:12px;color:var(--muted);margin:9px 0 3px}
+  input,select,textarea{width:100%;background:#0b1220;border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:8px 10px;font-size:13px;outline:none}
+  input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{text-align:left;padding:8px 9px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-weight:700;font-size:11.5px;position:sticky;top:0;background:var(--panel)}
+  .pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;background:#22304d;color:var(--txt)}
+  .pill.ok{background:rgba(52,211,153,.16);color:var(--ok)}.pill.warn{background:rgba(251,191,36,.16);color:var(--warn)}.pill.err{background:rgba(248,113,113,.16);color:var(--err)}
+  pre{background:#070d18;border:1px solid var(--line);border-radius:9px;padding:11px;max-height:300px;overflow:auto;font-size:12px;color:#cbd5e1;white-space:pre-wrap;margin:0}
+  .row{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+  .muted{color:var(--muted)}.hidden{display:none}
+  .toast{position:fixed;right:18px;bottom:18px;background:var(--panel);border:1px solid var(--line);padding:11px 15px;border-radius:11px;font-size:13px;opacity:0;transform:translateY(10px);transition:.25s;z-index:60;max-width:360px}
+  .toast.show{opacity:1;transform:none}.toast.ok{border-left:4px solid var(--ok)}.toast.err{border-left:4px solid var(--err)}
+  .scroll{max-height:420px;overflow:auto;border:1px solid var(--line);border-radius:10px}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+  .seg button{background:transparent;border:0;color:var(--muted);padding:7px 13px;cursor:pointer;font-size:13px}
+  .seg button.active{background:var(--accent);color:#0b1220;font-weight:700}
+  .kbd{font-family:monospace;background:#0b1220;border:1px solid var(--line);border-radius:6px;padding:1px 6px;font-size:12px}
+  a.link{color:var(--accent);text-decoration:none}
+</style>
+</head>
+<body>
+<header>
+  <h1>🚕 网约车全栈系统 · 整体前端演示（工单 01–20）</h1>
+  <div class="status">
+    <span class="dot" id="connDot"></span><span id="connTxt">未连接</span><span>·</span><span id="who">未登录</span>
+    <button class="btn sm" id="initBtn">一键初始化演示</button>
+  </div>
+</header>
+
+<div class="layout">
+  <nav id="nav">
+    <div class="grp">概览</div>
+    <button data-tab="overview" class="active">📊 系统总览</button>
+    <div class="grp">乘客端</div>
+    <button data-tab="w01">🚗 顺风车 <span class="tag">01</span></button>
+    <button data-tab="w12">👤 乘客账户 <span class="tag">12</span></button>
+    <button data-tab="w13">🗺️ 实时打车 <span class="tag">13</span></button>
+    <button data-tab="w14">💳 支付评价 <span class="tag">14</span></button>
+    <button data-tab="w07">🎟️ 优惠券 <span class="tag">07</span></button>
+    <div class="grp">司机端 / 网约车</div>
+    <button data-tab="w15">📡 接单·行程 <span class="tag">15/16/17</span></button>
+    <button data-tab="w11">🧭 订单中心·派单 <span class="tag">11</span></button>
+    <div class="grp">管理端</div>
+    <button data-tab="w05">👥 人员管理 <span class="tag">05</span></button>
+    <button data-tab="w02">🚌 班车管理 <span class="tag">02</span></button>
+    <button data-tab="w04">📦 订单管理 <span class="tag">04</span></button>
+    <button data-tab="w03">💰 财务管理 <span class="tag">03</span></button>
+    <button data-tab="w06">📈 数据分析 <span class="tag">06</span></button>
+    <div class="grp">平台 / AI</div>
+    <button data-tab="w09">⚙️ 任务·菜单 <span class="tag">09</span></button>
+    <button data-tab="w10">🤖 AI 出行助手 <span class="tag">10</span></button>
+    <button data-tab="w18">🌟 数字人 <span class="tag">18/19</span></button>
+    <div class="grp">运维 / 工具</div>
+    <button data-tab="w08">📉 性能监控 <span class="tag">08</span></button>
+    <button data-tab="w20">🛠️ 代码审查 <span class="tag">20</span></button>
+  </nav>
+
+  <main>
+    <!-- 总览 -->
+    <section id="tab-overview">
+      <div class="card"><h2>系统总览</h2>
+        <div class="sub">覆盖 12 类业务域、20 个工单。点击右上角「一键初始化演示」自动登录 admin / driverA，随后所有模块均可调用真实接口。</div>
+        <div class="grid c4" id="ovStats"></div>
+      </div>
+      <div class="card"><h2>工单全景</h2>
+        <div class="grid c3" id="ovOrders"></div>
+      </div>
+    </section>
+
+    <!-- 工单01 顺风车 -->
+    <section id="tab-w01" class="hidden">
+      <div class="card"><h2>工单01 · 顺风车 / 实名制</h2>
+        <div class="sub">发布行程、行程列表、智能匹配、行程分享（含 token 分享页）、紧急求助。</div>
+        <div class="row" style="margin-bottom:10px"><button class="btn sm" data-get="/trips">行程列表</button>
+          <button class="btn ghost sm" data-get="/driver/vehicles">我的车辆</button>
+          <button class="btn ghost sm" data-get="/driver/reminders">到期提醒</button></div>
+        <div class="grid c2">
+          <div><h3 style="font-size:14px">发布行程</h3>
+            <label>起点</label><input id="tFrom" value="人民广场"><label>终点</label><input id="tTo" value="虹桥机场">
+            <label>出发时间(ISO)</label><input id="tTime" value="2026-10-28T20:00:00+08:00">
+            <label>空座位数</label><input id="tSeats" value="2">
+            <div style="margin-top:8px"><button class="btn sm" id="tPub">发布</button></div>
+          </div>
+          <div><h3 style="font-size:14px">行程分享</h3>
+            <label>行程ID</label><input id="tShareId" value="1"><div style="margin-top:8px"><button class="btn sm" id="tShare">生成分享链接</button></div>
+            <div id="tShareOut" class="muted" style="margin-top:10px"></div>
+          </div>
+        </div>
+        <div id="w01Out" class="scroll hidden" style="margin-top:12px"></div>
+      </div>
+      <div class="card"><h2>通用接口调试</h2><div class="raw" data-default="/trips" data-token="driver"></div></div>
+    </section>
+
+    <!-- 工单12 乘客账户 -->
+    <section id="tab-w12" class="hidden">
+      <div class="card"><h2>工单12 · 乘客账户信息</h2>
+        <div class="row" style="margin-bottom:10px"><button class="btn sm" id="accProfile">账户</button>
+          <button class="btn ghost sm" id="accOrders">行程记录</button>
+          <button class="btn ghost sm" id="accAddr">地址</button>
+          <button class="btn ghost sm" id="accPay">支付</button></div>
+        <div id="accProfileOut" class="muted">尚未加载</div>
+        <div id="accOrdersOut" class="hidden scroll" style="margin-top:10px"></div>
+        <div class="grid c2" style="margin-top:14px">
+          <div><h3 style="font-size:14px">新增常用地址</h3>
+            <label>名称</label><input id="aName" value="家"><label>地址</label><input id="aAddr" value="人民广场">
+            <label>经纬度</label><div class="row"><input id="aLng" value="121.47"><input id="aLat" value="31.23"></div>
+            <label><input type="checkbox" id="aDef" checked style="width:auto;margin-right:6px">默认</label>
+            <div style="margin-top:8px"><button class="btn sm" id="accAddrAdd">添加</button></div></div>
+          <div><h3 style="font-size:14px">新增支付方式</h3>
+            <label>类型</label><input id="pType" value="alipay"><label>账号</label><input id="pAcc" value="13811110001">
+            <label><input type="checkbox" id="pDef" checked style="width:auto;margin-right:6px">默认</label>
+            <div style="margin-top:8px"><button class="btn sm" id="accPayAdd">添加</button></div></div>
+        </div>
+        <div class="grid c2" style="margin-top:12px">
+          <div class="scroll"><table id="accAddrTbl"><thead><tr><th>ID</th><th>名称</th><th>地址</th><th>默认</th></tr></thead><tbody></tbody></table></div>
+          <div class="scroll"><table id="accPayTbl"><thead><tr><th>ID</th><th>类型</th><th>账号</th><th>默认</th></tr></thead><tbody></tbody></table></div>
+        </div>
+      </div>
+      <div class="card"><h2>短信登录 / 找回密码</h2>
+        <div class="row"><button class="btn ghost sm" id="accSms">发送验证码(login)</button><button class="btn ghost sm" id="accReset">发送验证码(reset)</button></div>
+        <div id="accSmsOut" class="muted" style="margin-top:8px">点击发送后显示 devCode</div>
+        <div class="raw" data-default="/auth/sms-code" data-token="none" data-body='{"phone":"13811110001","purpose":"login"}'></div>
+      </div>
+    </section>
+
+    <!-- 工单13 实时打车 -->
+    <section id="tab-w13" class="hidden">
+      <div class="card"><h2>工单13 · 实时打车</h2>
+        <div class="row" style="margin-bottom:10px"><button class="btn sm" id="rideOnline">司机上线</button>
+          <button class="btn ghost sm" id="rideNearby">附近司机</button>
+          <button class="btn ghost sm" id="rideSos">发起 SOS</button></div>
+        <div id="rideNearbyBox" class="hidden scroll" style="margin-top:10px"><table id="rideNearbyTbl"><thead><tr><th>司机ID</th><th>姓名</th><th>车牌</th><th>评分</th><th>距离km</th><th>状态</th><th></th></tr></thead><tbody></tbody></table></div>
+        <div id="rideSosOut" class="muted" style="margin-top:10px">尚未发起</div>
+      </div>
+      <div class="raw" data-default="/drivers/nearby?lng=121.4737&lat=31.2304&radiusKm=5" data-token="driver"></div>
+    </section>
+
+    <!-- 工单14 支付评价 -->
+    <section id="tab-w14" class="hidden">
+      <div class="card"><h2>工单14 · 支付 / 评价 / 打赏 / 发票</h2>
+        <div class="row" style="margin-bottom:10px"><button class="btn sm" id="payOrder">创建订单</button>
+          <button class="btn ghost sm" id="payReview">评价</button><button class="btn ghost sm" id="payTip">打赏¥5</button>
+          <button class="btn ghost sm" id="payInvoice">发票</button></div>
+        <div id="payOut" class="muted">尚未操作</div>
+      </div>
+      <div class="card"><h2>评价审核（管理员）</h2>
+        <div class="row" style="margin-bottom:10px"><button class="btn sm" id="payReviewList">待审评价</button></div>
+        <div class="scroll"><table id="payReviewTbl"><thead><tr><th>ID</th><th>订单</th><th>评分</th><th>评论</th><th>状态</th><th>操作</th></tr></thead><tbody></tbody></table></div>
+      </div>
+    </section>
+
+    <!-- 工单07 优惠券 -->
+    <section id="tab-w07" class="hidden">
+      <div class="card"><h2>工单07 · 优惠券</h2>
+        <div class="sub">用户可浏览/领取/收藏；管理员可创建、发放、推广发码。</div>
+        <div class="row" style="margin-bottom:10px"><button class="btn sm" data-get="/coupons">券列表</button>
+          <button class="btn ghost sm" data-get="/coupons/mine">我的券</button>
+          <button class="btn ghost sm" data-get="/coupons/favorites">收藏</button></div>
+        <div class="scroll" id="w07Out"></div>
+      </div>
+      <div class="raw" data-default="/coupons" data-token="driver" data-body='{"name":"新手券","type":"full_reduce","value":10,"threshold":50}'></div>
+    </section>
+
+    <!-- 工单15/16/17 司机接单行程 -->
+    <section id="tab-w15" class="hidden">
+      <div class="card"><h2>工单15/16/17 · 司机接单 & 行程 & 接单大厅</h2>
+        <div class="row" style="margin-bottom:10px"><button class="btn sm" id="dOnline">上线</button>
+          <button class="btn ghost sm" id="dOffline">下线</button>
+          <button class="btn ghost sm" id="dStatus">我的状态</button>
+          <button class="btn ghost sm" id="dLoc">上报位置</button>
+          <button class="btn ghost sm" id="dHall">接单大厅</button></div>
+        <div id="dHallBox" class="hidden scroll" style="margin-top:10px"></div>
+        <div class="grid c2" style="margin-top:12px">
+          <div><h3 style="font-size:14px">抢单</h3><label>订单号</label><input id="dAccNo" placeholder="订单号">
+            <div style="margin-top:8px"><button class="btn sm" id="dAccept">抢单</button> <button class="btn ghost sm" id="dReject">拒单</button></div></div>
+          <div><h3 style="font-size:14px">行程流程</h3><label>订单号</label><input id="dFlowNo" placeholder="订单号">
+            <div class="row" style="margin-top:8px">
+              <button class="btn ghost sm" data-flow="arrive">到达</button>
+              <button class="btn ghost sm" data-flow="pickup">接客</button>
+              <button class="btn ghost sm" data-flow="start">开始</button>
+              <button class="btn ghost sm" data-flow="finish">完成</button>
+              <button class="btn ghost sm" data-flow="confirm-bill">确认账单</button>
+            </div></div>
+        </div>
+        <div id="dFlowOut" class="muted" style="margin-top:10px"></div>
+      </div>
+      <div class="raw" data-default="/orders/list?lng=121.4737&lat=31.2304" data-token="driver"></div>
+    </section>
+
+    <!-- 工单11 订单中心派单 -->
+    <section id="tab-w11" class="hidden">
+      <div class="card"><h2>工单11 · 订单中心 & 派单引擎</h2>
+        <div class="row" style="margin-bottom:10px"><button class="btn sm" id="oCreate">创建网约车订单</button>
+          <button class="btn ghost sm" data-get="/ride-orders">订单列表</button>
+          <button class="btn ghost sm" data-get="/dispatch-config/上海">派单配置</button></div>
+        <div class="grid c2" style="margin-top:10px">
+          <div><h3 style="font-size:14px">查询订单详情</h3><label>订单号</label><input id="oNo" placeholder="R...">
+            <div style="margin-top:8px"><button class="btn sm" id="oDetail">查询</button></div></div>
+          <div><h3 style="font-size:14px">取消订单</h3><label>订单号</label><input id="oCancelNo" placeholder="R..."><label>原因</label><input id="oCancelR" value="个人计划改变">
+            <div style="margin-top:8px"><button class="btn sm" id="oCancel">取消</button></div></div>
+        </div>
+        <div id="oOut" class="muted" style="margin-top:10px"></div>
+      </div>
+      <div class="raw" data-default="/ride-orders" data-token="driver" data-body='{"passengerName":"P","passengerPhone":"13811110001","startName":"A","startLng":121.47,"startLat":31.23,"destName":"B","destLng":121.48,"destLat":31.24}'></div>
+    </section>
+
+    <!-- 工单05 人员管理 -->
+    <section id="tab-w05" class="hidden">
+      <div class="card"><h2>工单05 · 人员管理（RBAC）</h2>
+        <div class="row" style="margin-bottom:10px"><button class="btn sm" data-get="/users">员工列表</button>
+          <button class="btn ghost sm" data-get="/roles">角色</button>
+          <button class="btn ghost sm" data-get="/drivers">司机列表</button></div>
+        <div class="scroll" id="w05Out"></div>
+      </div>
+      <div class="raw" data-default="/users" data-token="admin" data-body='{"username":"newemp","password":"Abc@123456","realName":"新员工","phone":"13900000000","role":"dispatcher"}'></div>
+    </section>
+
+    <!-- 工单02 班车 -->
+    <section id="tab-w02" class="hidden">
+      <div class="card"><h2>工单02 · 班车管理</h2>
+        <div class="row" style="margin-bottom:10px"><button class="btn sm" data-get="/routes">路线</button>
+          <button class="btn ghost sm" data-get="/shifts">排班</button></div>
+        <div class="scroll" id="w02Out"></div>
+      </div>
+      <div class="raw" data-default="/routes" data-token="admin" data-body='{"name":"机场快线","start":"人民广场","end":"浦东机场","price":30}'></div>
+    </section>
+
+    <!-- 工单04 订单管理 -->
+    <section id="tab-w04" class="hidden">
+      <div class="card"><h2>工单04 · 订单管理 & 退票 & 评价</h2>
+        <div class="sub">管理端视角订单列表 / 详情 / 评价；用户侧下单、支付、推进、取消、退票。</div>
+        <div class="row" style="margin-bottom:10px"><button class="btn sm" data-get="/orders">订单列表(管理端)</button>
+          <button class="btn ghost sm" data-get="/reviews">评价管理</button>
+          <button class="btn ghost sm" data-get="/refunds">退票列表</button></div>
+        <div class="scroll" id="w04Out"></div>
+      </div>
+      <div class="raw" data-default="/orders" data-token="admin"></div>
+    </section>
+
+    <!-- 工单03 财务 -->
+    <section id="tab-w03" class="hidden">
+      <div class="card"><h2>工单03 · 财务管理</h2>
+        <div class="row" style="margin-bottom:10px"><button class="btn sm" data-get="/finance/transactions">交易流水</button>
+          <button class="btn ghost sm" data-get="/finance/bills">账单</button>
+          <button class="btn ghost sm" data-get="/finance/anomalies">异常</button>
+          <button class="btn ghost sm" data-get="/finance/reconcile">对账</button></div>
+        <div class="scroll" id="w03Out"></div>
+      </div>
+      <div class="raw" data-default="/finance/transactions" data-token="admin"></div>
+    </section>
+
+    <!-- 工单06 数据 -->
+    <section id="tab-w06" class="hidden">
+      <div class="card"><h2>工单06 · 数据分析</h2>
+        <div class="row" style="margin-bottom:10px"><button class="btn sm" data-get="/analytics/orders">订单分析</button>
+          <button class="btn ghost sm" data-get="/analytics/conversion">转化分析</button>
+          <button class="btn ghost sm" data-get="/analytics/repurchase">复购分析</button></div>
+        <div class="scroll" id="w06Out"></div>
+      </div>
+      <div class="raw" data-default="/analytics/orders" data-token="admin"></div>
+    </section>
+
+    <!-- 工单09 任务菜单 -->
+    <section id="tab-w09" class="hidden">
+      <div class="card"><h2>工单09 · 任务管理（替代 XXL-JOB）</h2>
+        <div class="row" style="margin-bottom:10px"><button class="btn sm" id="gvaJobs">任务列表</button>
+          <button class="btn ghost sm" id="gvaRun">执行 cleanup</button>
+          <button class="btn ghost sm" id="gvaAudits">审计历史</button>
+          <button class="btn ghost sm" id="gvaMenus">菜单树</button>
+          <button class="btn ghost sm" id="gvaLogs">操作审计</button></div>
+        <div class="scroll" style="margin-top:10px"><table id="gvaJobTbl"><thead><tr><th>任务</th><th>说明</th><th>参数</th><th>结果</th><th></th></tr></thead><tbody></tbody></table></div>
+        <div id="gvaBox" class="hidden scroll" style="margin-top:10px"></div>
+      </div>
+      <div class="raw" data-default="/jobs" data-token="admin"></div>
+    </section>
+
+    <!-- 工单10 AI -->
+    <section id="tab-w10" class="hidden">
+      <div class="card"><h2>工单10 · AI 智能出行助手（Coze + Function Calling）</h2>
+        <div class="row" style="margin-bottom:10px"><button class="btn sm" id="aiChatBtn">对话</button>
+          <button class="btn ghost sm" data-get="/ai/shelters?lng=121.4737&lat=31.2304">避雨点</button>
+          <button class="btn ghost sm" id="aiRain">雨天路线</button>
+          <button class="btn ghost sm" id="aiAlert">天气预警</button>
+          <button class="btn ghost sm" id="aiFlood">积水上报</button>
+          <button class="btn ghost sm" id="aiRed">红色预警校验</button></div>
+        <div class="grid c2" style="margin-top:10px">
+          <div><h3 style="font-size:14px">对话</h3>
+            <div class="row"><input id="aiInput" placeholder="如：帮我规划雨天从A到B的路线"><button class="btn sm" id="aiSend">发送</button></div>
+            <pre id="aiChatOut" style="margin-top:8px;min-height:120px"></pre></div>
+          <div><h3 style="font-size:14px">结果</h3><pre id="aiOut">—</pre></div>
+        </div>
+      </div>
+      <div class="raw" data-default="/ai/chat" data-token="admin" data-body='{"message":"今天天气如何"}'></div>
+    </section>
+
+    <!-- 工单18/19 数字人 -->
+    <section id="tab-w18" class="hidden">
+      <div class="card"><h2>工单18/19 · 数字人 Coze 智能体 & WS 会话</h2>
+        <div class="row" style="margin-bottom:10px"><button class="btn sm" id="dhStatus">Coze 状态</button>
+          <button class="btn ghost sm" id="dhConnect">连接 WS</button>
+          <button class="btn ghost sm" id="dhSend" disabled>发送</button></div>
+        <div id="dhStatusOut" class="muted" style="margin-bottom:8px">尚未查询</div>
+        <div class="grid c2">
+          <div><h3 style="font-size:14px">会话</h3>
+            <div id="dhChat" style="background:#070d18;border:1px solid var(--line);border-radius:9px;padding:10px;height:220px;overflow:auto;font-size:13px"></div>
+            <div class="row" style="margin-top:8px"><input id="dhInput" placeholder="说点什么…"></div></div>
+          <div><h3 style="font-size:14px">连接状态</h3><div id="dhConn" class="muted">未连接</div>
+            <p class="muted" style="font-size:12px">未配置 Coze 时后端走本地降级，仍回显并模拟流式分片，便于联调。</p></div>
+        </div>
+      </div>
+      <div class="raw" data-default="/ai/digital-human/status" data-token="admin"></div>
+    </section>
+
+    <!-- 工单08 性能 -->
+    <section id="tab-w08" class="hidden">
+      <div class="card"><h2>工单08 · 性能分析工具链</h2>
+        <div class="sub">Prometheus（<span class="kbd">/metrics</span>，无需鉴权）、runtime/metrics、expvar；pprof 仅管理员。</div>
+        <div class="row" style="margin-bottom:10px"><button class="btn sm" id="perfMetrics">拉取 /metrics</button>
+          <a class="btn ghost" href="http://localhost:8080/debug/pprof/" target="_blank">pprof（管理员）</a></div>
+        <pre id="perfOut">尚未拉取</pre>
+      </div>
+      <div class="raw" data-default="/metrics" data-token="none"></div>
+    </section>
+
+    <!-- 工单20 -->
+    <section id="tab-w20" class="hidden">
+      <div class="card"><h2>工单20 · 代码审查 Skill</h2>
+        <div class="sub">将 <span class="kbd">cursor-skills/code-review</span> 复制到 <span class="kbd">.cursor/skills/</span> 或 <span class="kbd">.trae/skills/</span> 生效。</div>
+        <ul class="muted" style="font-size:13px;line-height:1.9">
+          <li>斜杠命令：<b>/review</b>（未提交变更）、<b>/review &lt;path&gt;</b>、<b>/review --strict</b></li>
+          <li>四维审查：正确性 / 安全 / 性能 / 可维护性</li>
+          <li>判级：阻断 / 严重 / 建议 + Markdown 报告模板</li>
+        </ul>
+        <pre>cp -r cursor-skills/code-review .cursor/skills/
+# 触发：/review  或  /review internal/service  或 “帮我代码审查 internal/handler”</pre>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const BASE="http://localhost:8080/api/v1";
+const ROOT="http://localhost:8080";
+const state={admin:null,driver:null,ws:null};
+
+function toast(m,ok=true){const t=document.getElementById("toast");t.textContent=m;t.className="toast show "+(ok?"ok":"err");setTimeout(()=>t.classList.remove("show"),2600);}
+async function api(method,path,body,token){
+  const opt={method,headers:{}};
+  if(token&&token!=="none")opt.headers.Authorization="Bearer "+token;
+  if(body!==undefined&&body!==null){opt.headers["Content-Type"]="application/json";opt.body=JSON.stringify(body);}
+  const r=await fetch(BASE+path,opt);let j=null;try{j=await r.json();}catch(e){}
+  if(!r.ok)throw new Error((j&&j.msg)||("HTTP "+r.status));
+  if(j&&j.code!==0&&j.code!==undefined)throw new Error(j.msg||"业务错误");
+  return j?j.data:null;
+}
+function setConn(o){document.getElementById("connDot").className="dot"+(o?" on":"");document.getElementById("connTxt").textContent=o?"已连接 :8080":"未连接";}
+function setWho(){const w=[];if(state.admin)w.push("admin");if(state.driver)w.push("driverA");document.getElementById("who").textContent=w.length?("已登录: "+w.join("/")):"未登录";}
+function esc(s){return String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
+function fmt(v){if(v===null||v===undefined)return "—";if(typeof v==="object")return esc(JSON.stringify(v));return esc(v);}
+function tbl(arr){if(!Array.isArray(arr))return "<pre>"+esc(JSON.stringify(arr,null,2))+"</pre>";if(!arr.length)return '<div class="muted">无数据</div>';
+  const cols=[...new Set(arr.flatMap(o=>Object.keys(o||{})))];
+  const head=cols.map(c=>`<th>${c}</th>`).join("");
+  const body=arr.map(r=>"<tr>"+cols.map(c=>`<td>${fmt(r[c])}</td>`).join("")+"</tr>").join("");
+  return `<table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;}
+
+// 导航
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active");
+  document.querySelectorAll("main section").forEach(s=>s.classList.add("hidden"));
+  document.getElementById("tab-"+b.dataset.tab).classList.remove("hidden");
+});
+
+// 通用 raw 面板
+function buildRawPanels(){
+  document.querySelectorAll(".raw").forEach(el=>{
+    const def=el.dataset.default||"";const tk=el.dataset.token||"admin";const body=el.dataset.body||"";
+    el.innerHTML=`<label>接口路径</label><input class="rp-path" value="${def}">
+      <label>方法</label><select class="rp-method"><option>GET</option><option>POST</option><option>PUT</option><option>DELETE</option></select>
+      <label>请求体(JSON，POST/PUT)</label><textarea class="rp-body" rows="3">${body}</textarea>
+      <div class="row"><label style="margin:0">令牌</label><select class="rp-token"><option value="admin"${tk==="admin"?" selected":""}>admin</option><option value="driver"${tk==="driver"?" selected":""}>driverA</option><option value="none"${tk==="none"?" selected":""}>无</option></select>
+      <button class="btn sm rp-send">发送</button></div>
+      <pre class="rp-out" style="margin-top:8px">—</pre>`;
+  });
+}
+document.addEventListener("click",e=>{
+  if(e.target.classList.contains("rp-send")){
+    const card=e.target.closest(".raw");
+    const path=card.querySelector(".rp-path").value.trim();
+    const method=card.querySelector(".rp-method").value;
+    const tk=card.querySelector(".rp-token").value;
+    const token=tk==="admin"?state.admin:(tk==="driver"?state.driver:null);
+    let body=undefined;if(method==="POST"||method==="PUT"){const t=card.querySelector(".rp-body").value.trim();body=t?JSON.parse(t):{};}
+    api(method,path,body,token).then(d=>{card.querySelector(".rp-out").textContent=JSON.stringify(d,null,2);toast("请求成功",true);})
+      .catch(err=>{card.querySelector(".rp-out").textContent="错误: "+err.message;toast("请求失败: "+err.message,false);});
+  }
+});
+// data-get 按钮：把接口填入所在 section 的通用面板并发送
+document.querySelectorAll("[data-get]").forEach(b=>b.onclick=()=>{
+  const sec=b.closest("section");const path=b.dataset.get;
+  const rp=sec.querySelector(".raw .rp-path");
+  if(rp){rp.value=path;sec.querySelector(".raw .rp-method").value="GET";sec.querySelector(".raw .rp-send").click();}
+  else api("GET",path,null,state.admin).then(()=>toast("OK",true)).catch(e=>toast(e.message,false));
+});
+document.querySelectorAll("[data-flow]").forEach(b=>b.onclick=()=>{const no=document.getElementById("dFlowNo").value.trim();if(!no)return toast("请填订单号",false);
+  api("POST",`/ride-orders/${no}/${b.dataset.flow}`,{},state.driver).then(d=>{document.getElementById("dFlowOut").textContent="✅ "+JSON.stringify(d);toast("已执行 "+b.dataset.flow,true);}).catch(e=>{document.getElementById("dFlowOut").textContent="❌ "+e.message;toast(e.message,false);});});
+
+// 初始化
+document.getElementById("initBtn").onclick=async()=>{
+  try{
+    await api("POST","/auth/register",{username:"driverA",password:"Abc@123456",realName:"DriverA",phone:"13811110001",idCard:"110101198501011111",role:"carpool_driver"}).catch(()=>{});
+    const a=await api("POST","/auth/login",{username:"admin",password:"admin123"});
+    const d=await api("POST","/auth/login",{username:"driverA",password:"Abc@123456"});
+    state.admin=a.token;state.driver=d.token;setConn(true);setWho();toast("初始化成功",true);loadOverview();
+  }catch(e){toast("初始化失败: "+e.message,false);setConn(false);}
+};
+
+async function loadOverview(){
+  const s=[["连接","正常"],["管理员","已登录"],["司机","已登录"]];
+  try{const m=await(await fetch(ROOT+"/metrics")).text();const g=(m.match(/ride_runtime_goroutines (\d+)/)||[])[1];if(g)s.push(["Goroutines",g]);}catch(e){}
+  try{const j=await api("GET","/jobs",null,state.admin);s.push(["任务数(09)",j.length]);}catch(e){}
+  try{const p=await api("GET","/me/profile",null,state.driver);s.push(["乘客余额",p.balance]);s.push(["乘客积分",p.points]);}catch(e){}
+  document.getElementById("ovStats").innerHTML=s.map(x=>`<div class="stat"><div class="v">${x[1]}</div><div class="l">${x[0]}</div></div>`).join("");
+  const orders=[
+    ["01","顺风车","实名制/行程发布/匹配/分享/SOS"],["02","班车管理","路线/站点/排班"],
+    ["03","财务管理","交易/对账/账单/异常/争议"],["04","订单管理","下单/支付/退票/评价"],
+    ["05","人员管理","RBAC/员工/角色/司机"],["06","数据分析","订单/转化/复购"],
+    ["07","优惠券","发放/领取/收藏/推广码"],["08","性能监控","pprof/Prometheus/expvar/gops"],
+    ["09","任务菜单","任务注册表/动态菜单/审计"],["10","AI 助手","Coze/雨天路线/避雨点/积水"],
+    ["11","订单中心","派单引擎/幂等/轨迹/缓存"],["12","乘客账户","短信登录/地址/支付/反馈"],
+    ["13","实时打车","附近司机/详情/SOS"],["14","支付评价","打赏/发票/匿名评价/审核"],
+    ["15","司机接单","上线/GEO/抢单防重"],["16","行程计费","行程/账单/取消补偿"],
+    ["17","接单大厅","GEO半径/筛选/分页"],["18","数字人","Coze代理/WS联调"],
+    ["19","数字人WS","会话状态/打断/防强踢"],["20","代码审查","/review 技能"]
+  ];
+  document.getElementById("ovOrders").innerHTML=orders.map(o=>`<div class="stat"><div class="row" style="gap:6px"><span class="pill ok">${o[0]}</span></div><div style="margin-top:6px;font-weight:700">${o[1]}</div><div class="muted" style="font-size:11.5px;margin-top:3px">${o[2]}</div></div>`).join("");
+}
+
+// ====== 工单01 ======
+document.getElementById("tPub").onclick=async()=>{const b={from:v("tFrom"),to:v("tTo"),departAt:v("tTime"),seats:+v("tSeats")};
+  api("POST","/trips",b,state.driver).then(()=>{toast("已发布",true);document.querySelector('#tab-w01 [data-get="/trips"]').click();}).catch(e=>toast(e.message,false));};
+document.getElementById("tShare").onclick=async()=>{const id=v("tShareId");const r=await api("POST",`/trips/${id}/share`,{},state.driver).catch(()=>({token:"DEMO"+id}));
+  document.getElementById("tShareOut").innerHTML=`分享链接：<a class="link" href="${ROOT}/share/trip/${r.token}" target="_blank">${ROOT}/share/trip/${r.token}</a>`;};
+
+// ====== 工单12 ======
+document.getElementById("accProfile").onclick=async()=>{const p=await api("GET","/me/profile",null,state.driver);
+  document.getElementById("accProfileOut").innerHTML=`<div class="grid c3"><div class="stat"><div class="v">${p.nickname||p.username}</div><div class="l">昵称</div></div><div class="stat"><div class="v">${p.balance}</div><div class="l">余额</div></div><div class="stat"><div class="v">${p.points}</div><div class="l">积分</div></div></div>`;};
+document.getElementById("accOrders").onclick=async()=>{const o=await api("GET","/me/orders",null,state.driver);const b=document.getElementById("accOrdersOut");b.classList.remove("hidden");b.innerHTML=tbl(o.data||o);};
+async function loadAddr(){const l=await api("GET","/me/addresses",null,state.driver);document.querySelector("#accAddrTbl tbody").innerHTML=(l||[]).map(a=>`<tr><td>${a.id}</td><td>${a.name}</td><td>${a.address}</td><td>${a.isDefault?"✅":"—"}</td></tr>`).join("");}
+async function loadPay(){const l=await api("GET","/me/payments",null,state.driver);document.querySelector("#accPayTbl tbody").innerHTML=(l||[]).map(p=>`<tr><td>${p.id}</td><td>${p.type}</td><td>${p.account}</td><td>${p.isDefault?"✅":"—"}</td></tr>`).join("");}
+document.getElementById("accAddr").onclick=loadAddr;document.getElementById("accPay").onclick=loadPay;
+document.getElementById("accAddrAdd").onclick=async()=>{await api("POST","/me/addresses",{label:"home",name:v("aName"),address:v("aAddr"),lng:+v("aLng"),lat:+v("aLat"),isDefault:g("aDef")},state.driver);toast("已添加",true);loadAddr();};
+document.getElementById("accPayAdd").onclick=async()=>{await api("POST","/me/payments",{type:v("pType"),account:v("pAcc"),isDefault:g("pDef")},state.driver);toast("已添加",true);loadPay();};
+document.getElementById("accSms").onclick=async()=>{const r=await api("POST","/auth/sms-code",{phone:"13811110001",purpose:"login"});document.getElementById("accSmsOut").innerHTML=`devCode：<span class="pill ok">${r.devCode}</span>`;};
+document.getElementById("accReset").onclick=async()=>{const r=await api("POST","/auth/sms-code",{phone:"13811110001",purpose:"reset"});document.getElementById("accSmsOut").innerHTML=`reset devCode：<span class="pill ok">${r.devCode}</span>`;};
+
+// ====== 工单13 ======
+document.getElementById("rideOnline").onclick=async()=>{await api("POST","/driver/online",{lng:121.4737,lat:31.2304},state.driver);toast("司机已上线",true);};
+document.getElementById("rideNearby").onclick=async()=>{const r=await api("GET","/drivers/nearby?lng=121.4737&lat=31.2304&radiusKm=5",null,state.driver);
+  document.getElementById("rideNearbyBox").classList.remove("hidden");
+  document.querySelector("#rideNearbyTbl tbody").innerHTML=(r.drivers||[]).map(d=>`<tr><td>${d.driverId}</td><td>${d.name}</td><td>${d.plateNo||"—"}</td><td>${d.rating}</td><td>${d.distanceKm!=null?d.distanceKm:"—"}</td><td>${d.status==="online"?"🟢":"⚪"}</td><td><button class="btn sm" onclick="driverDetail('${d.driverId}')">详情</button></td></tr>`).join("");
+  toast("附近司机: "+(r.count||0)+" 位",true);};
+window.driverDetail=async id=>{const d=await api("GET","/drivers/"+id,null,state.driver);toast(`司机 ${d.name} 评分${d.rating} 在线:${d.online}`,true);};
+document.getElementById("rideSos").onclick=async()=>{const s=await api("POST","/sos",{orderNo:"",lng:121.47,lat:31.23,address:"人民广场"},state.driver);document.getElementById("rideSosOut").innerHTML=`SOS 已创建：<span class="pill warn">ID ${s.id}</span> 状态 ${s.status}`;toast("SOS 已发起",true);};
+
+// ====== 工单14 ======
+let lastOrder=null,lastReview=null;
+document.getElementById("payOrder").onclick=async()=>{const o=await api("POST","/ride-orders",{passengerName:"P",passengerPhone:"13811110001",startName:"A",startLng:121.47,startLat:31.23,destName:"B",destLng:121.48,destLat:31.24},state.driver);lastOrder=o.orderNo;document.getElementById("payOut").innerHTML=`订单：<span class="pill ok">${o.orderNo}</span>`;toast("已创建",true);};
+document.getElementById("payReview").onclick=async()=>{if(!lastOrder)return toast("先建订单",false);const r=await api("POST",`/ride-orders/${lastOrder}/review`,{rating:5,comment:"很好",anonymous:false},state.driver);lastReview=r.reviewId;document.getElementById("payOut").innerHTML+=`<br>评价 ID ${r.reviewId} 状态 ${r.status}`;toast("已提交(待审)",true);};
+document.getElementById("payTip").onclick=async()=>{if(!lastOrder)return toast("先建订单",false);await api("POST",`/ride-orders/${lastOrder}/tip`,{amount:5,thanks:"谢谢"},state.driver);document.getElementById("payOut").innerHTML+=`<br>打赏¥5`;toast("打赏成功",true);};
+document.getElementById("payInvoice").onclick=async()=>{if(!lastOrder)return toast("先建订单",false);const i=await api("POST",`/ride-orders/${lastOrder}/invoice`,{type:"electronic",title:"个人",email:"a@b.com"},state.driver);document.getElementById("payOut").innerHTML+=`<br>发票 ID ${i.id} 状态 ${i.status}`;toast("已申请",true);};
+document.getElementById("payReviewList").onclick=async()=>{const l=await api("GET","/ride-reviews",null,state.admin);
+  document.querySelector("#payReviewTbl tbody").innerHTML=(l||[]).map(r=>`<tr><td>${r.id}</td><td>${r.orderNo}</td><td>${r.rating}</td><td class="muted">${r.comment}</td><td><span class="pill ${r.status==="pending"?"warn":(r.status==="approved"?"ok":"err")}">${r.status}</span></td><td>${r.status==="pending"?`<button class="btn sm" onclick="approve(${r.id})">通过</button>`:"—"}</td></tr>`).join("");toast("已加载",true);};
+window.approve=async id=>{await api("POST",`/ride-reviews/${id}/approve`,{},state.admin);toast("已通过",true);document.getElementById("payReviewList").click();};
+
+// ====== 工单15/16/17 ======
+document.getElementById("dOnline").onclick=async()=>{await api("POST","/driver/online",{lng:121.4737,lat:31.2304},state.driver);toast("上线",true);};
+document.getElementById("dOffline").onclick=async()=>{await api("POST","/driver/offline",{},state.driver);toast("下线",true);};
+document.getElementById("dStatus").onclick=async()=>{const s=await api("GET","/driver/status",null,state.driver);document.getElementById("dFlowOut").textContent=JSON.stringify(s);};
+document.getElementById("dLoc").onclick=async()=>{await api("POST","/driver/location",{lng:121.4737,lat:31.2304,speed:0},state.driver);toast("位置已上报",true);};
+document.getElementById("dHall").onclick=async()=>{const o=await api("GET","/orders/list?lng=121.4737&lat=31.2304",null,state.driver);const b=document.getElementById("dHallBox");b.classList.remove("hidden");b.innerHTML=tbl(o.data||o);};
+document.getElementById("dAccept").onclick=async()=>{const no=v("dAccNo");if(!no)return toast("填订单号",false);api("POST","/ride-orders/accept",{orderNo:no},state.driver).then(d=>{document.getElementById("dFlowOut").textContent="✅ "+JSON.stringify(d);toast("抢单成功",true);}).catch(e=>{document.getElementById("dFlowOut").textContent="❌ "+e.message;toast(e.message,false);});};
+document.getElementById("dReject").onclick=async()=>{const no=v("dAccNo");if(!no)return toast("填订单号",false);api("POST","/ride-orders/reject",{orderNo:no,reason:"太远"},state.driver).then(()=>toast("已拒单",true)).catch(e=>toast(e.message,false));};
+
+// ====== 工单11 ======
+document.getElementById("oCreate").onclick=async()=>{const o=await api("POST","/ride-orders",{passengerName:"P",passengerPhone:"13811110001",startName:"A",startLng:121.47,startLat:31.23,destName:"B",destLng:121.48,destLat:31.24},state.driver);document.getElementById("oOut").innerHTML=`已创建：<span class="pill ok">${o.orderNo}</span>`;toast("已创建",true);};
+document.getElementById("oDetail").onclick=async()=>{const no=v("oNo");if(!no)return toast("填订单号",false);const d=await api("GET",`/ride-orders/${no}`,null,state.driver);document.getElementById("oOut").innerHTML="<pre>"+esc(JSON.stringify(d,null,2))+"</pre>";};
+document.getElementById("oCancel").onclick=async()=>{const no=v("oCancelNo");if(!no)return toast("填订单号",false);const d=await api("POST",`/ride-orders/${no}/cancel`,{reason:v("oCancelR")},state.driver);document.getElementById("oOut").innerHTML+=`<br>取消结果：${esc(JSON.stringify(d))}`;toast("已取消",true);};
+
+// ====== 工单09 ======
+document.getElementById("gvaJobs").onclick=async()=>{const j=await api("GET","/jobs",null,state.admin);document.querySelector("#gvaJobTbl tbody").innerHTML=(j||[]).map(x=>`<tr><td>${x.name}</td><td class="muted">${x.desc}</td><td><code>${esc(JSON.stringify(x.params))}</code></td><td>${x.lastResult||"—"}</td><td><button class="btn sm" onclick="runJob('${x.name}')">执行</button></td></tr>`).join("");toast("任务:"+j.length,true);};
+window.runJob=async n=>{await api("POST",`/jobs/${n}/run`,{params:{}},state.admin);toast("已执行 "+n,true);document.getElementById("gvaJobs").click();};
+document.getElementById("gvaRun").onclick=()=>window.runJob("cleanup_expired_orders");
+document.getElementById("gvaAudits").onclick=async()=>{const r=await api("GET","/jobs/audits?jobName=cleanup_expired_orders",null,state.admin);const b=document.getElementById("gvaBox");b.classList.remove("hidden");b.innerHTML="<h3 style='font-size:14px'>审计历史</h3><pre>"+esc(JSON.stringify(r,null,2))+"</pre>";};
+document.getElementById("gvaMenus").onclick=async()=>{const m=await api("GET","/menus",null,state.admin);const b=document.getElementById("gvaBox");b.classList.remove("hidden");b.innerHTML="<h3 style='font-size:14px'>菜单树</h3>"+tbl(m);};
+document.getElementById("gvaLogs").onclick=async()=>{const r=await api("GET","/audit-logs?page=1",null,state.admin);const b=document.getElementById("gvaBox");b.classList.remove("hidden");b.innerHTML="<h3 style='font-size:14px'>操作审计</h3><pre>"+esc(JSON.stringify(r,null,2))+"</pre>";};
+
+// ====== 工单10 AI ======
+document.getElementById("aiChatBtn").onclick=()=>document.getElementById("aiSend").click();
+document.getElementById("aiSend").onclick=async()=>{const msg=v("aiInput");if(!msg)return;document.getElementById("aiChatOut").textContent+="\n🧑 "+msg;const r=await api("POST","/ai/chat",{message:msg},state.admin).catch(e=>({reply:e.message}));document.getElementById("aiChatOut").textContent+="\n🤖 "+(r.reply||JSON.stringify(r));};
+document.getElementById("aiRain").onclick=async()=>{const r=await api("POST","/ai/rain-route",{origin:"A",destination:"B",rainfall:20},state.admin);document.getElementById("aiOut").textContent=JSON.stringify(r,null,2);};
+document.getElementById("aiAlert").onclick=async()=>{const r=await api("GET","/ai/weather-alert",null,state.admin);document.getElementById("aiOut").textContent=JSON.stringify(r,null,2);};
+document.getElementById("aiFlood").onclick=async()=>{const r=await api("POST","/ai/flood-report",{lng:121.47,lat:31.23,depth:30},state.admin);document.getElementById("aiOut").textContent=JSON.stringify(r,null,2);};
+document.getElementById("aiRed").onclick=async()=>{const r=await api("GET","/ai/red-alert-check?licenseSince=2018-01-01",null,state.admin);document.getElementById("aiOut").textContent=JSON.stringify(r,null,2);};
+
+// ====== 工单18/19 ======
+document.getElementById("dhStatus").onclick=async()=>{const s=await api("GET","/ai/digital-human/status",null,state.admin);document.getElementById("dhStatusOut").innerHTML=`Coze 可用：<span class="pill ${s.cozeAvailable?"ok":"warn"}">${s.cozeAvailable}</span> 模式：<b>${s.mode}</b>`;toast("已查询",true);};
+document.getElementById("dhConnect").onclick=()=>{if(state.ws)return;const tok=state.admin||state.driver;if(!tok)return toast("先初始化",false);const ws=new WebSocket("ws://localhost:8080/ws/dh?token="+encodeURIComponent(tok));state.ws=ws;
+  ws.onopen=()=>{document.getElementById("dhConn").textContent="🟢 已连接";document.getElementById("dhSend").disabled=false;toast("WS 已连",true);};
+  ws.onclose=()=>{document.getElementById("dhConn").textContent="⚪ 断开";document.getElementById("dhSend").disabled=true;state.ws=null;};
+  ws.onmessage=e=>{try{const m=JSON.parse(e.data);addChat((m.role==="assistant"?"🤖":"🧑")+"："+(m.content||""));}catch(_){addChat(e.data);}};};
+document.getElementById("dhSend").onclick=()=>{const t=v("dhInput");if(!t||!state.ws)return;state.ws.send(JSON.stringify({role:"user",type:"text",content:t}));addChat("🧑："+t);document.getElementById("dhInput").value="";};
+function addChat(s){const c=document.getElementById("dhChat");c.innerHTML+="<div style='margin:5px 0'>"+esc(s)+"</div>";c.scrollTop=c.scrollHeight;}
+
+// ====== 工单08 ======
+document.getElementById("perfMetrics").onclick=async()=>{const m=await(await fetch(ROOT+"/metrics")).text();const lines=m.split("\n").filter(l=>l.startsWith("ride_")&&!l.startsWith("#"));document.getElementById("perfOut").textContent=lines.join("\n")||"(无 ride_ 指标)";toast("已拉取",true);};
+
+// 列表型 data-get 的 Out 容器渲染
+function v(id){return document.getElementById(id).value;}
+function g(id){return document.getElementById(id).checked;}
+
+// 探测连接
+fetch(ROOT+"/metrics").then(()=>setConn(true)).catch(()=>setConn(false));
+buildRawPanels();
+</script>
+</body>
+</html>
