@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>数字人联调 · 网约车 AI 助手</title>
+<style>
+  body{font-family:system-ui,"PingFang SC",sans-serif;margin:0;background:#0e1116;color:#e6e6e6;height:100vh;display:flex;flex-direction:column}
+  header{padding:12px 16px;background:#161b22;border-bottom:1px solid #30363d;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  header input{flex:1;min-width:200px;padding:6px 10px;background:#0d1117;border:1px solid #30363d;color:#e6e6e6;border-radius:6px}
+  header button{padding:6px 12px;border:none;border-radius:6px;background:#238636;color:#fff;cursor:pointer}
+  header button.ghost{background:#30363d}
+  #log{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+  .msg{max-width:80%;padding:10px 14px;border-radius:12px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+  .user{align-self:flex-end;background:#1f6feb}
+  .assistant{align-self:flex-start;background:#21262d;border:1px solid #30363d}
+  .system{align-self:center;background:transparent;color:#8b949e;font-size:12px}
+  .event{align-self:center;background:#3a2b00;color:#e3b341;font-size:12px;border-radius:6px;padding:4px 8px}
+  footer{padding:12px 16px;border-top:1px solid #30363d;display:flex;gap:8px}
+  footer input{flex:1;padding:10px;border-radius:8px;border:1px solid #30363d;background:#0d1117;color:#e6e6e6}
+  footer button{padding:10px 18px;border:none;border-radius:8px;background:#1f6feb;color:#fff;cursor:pointer}
+  footer button.stop{background:#cf222e}
+  .hint{font-size:12px;color:#8b949e}
+</style>
+</head>
+<body>
+<header>
+  <span class="hint">Token</span>
+  <input id="token" placeholder="粘贴登录返回的 Bearer Token（管理员）">
+  <button id="connect">连接</button>
+  <button id="tts" class="ghost">TTS: 关</button>
+</header>
+<div id="log"></div>
+<footer>
+  <input id="input" placeholder="对数字人说点什么…（回车发送）">
+  <button id="send">发送</button>
+  <button id="interrupt" class="stop">打断</button>
+</footer>
+<script>
+const logEl = document.getElementById('log');
+let ws = null;
+let ttsOn = false;
+let audioCtx = null;
+
+function add(el){ logEl.appendChild(el); logEl.scrollTop = logEl.scrollHeight; }
+function mk(cls, text){ const d=document.createElement('div'); d.className='msg '+cls; d.textContent=text; return d; }
+function evt(text){ const d=document.createElement('div'); d.className='event'; d.textContent='● '+text; add(d); }
+
+function token(){ return document.getElementById('token').value.trim(); }
+
+document.getElementById('connect').onclick = ()=>{
+  if(!token()){ alert('请先填入 Token'); return; }
+  const proto = location.protocol==='https:'?'wss':'ws';
+  const sid = 'web-'+Date.now();
+  ws = new WebSocket(`${proto}://${location.host}/ws/dh?sid=${sid}`, [], );
+  // 注入 Authorization：浏览器 WS 不支持自定义头，这里通过 query 透传（演示）
+  ws.onopen = ()=> evt('已连接数字人会话');
+  ws.onmessage = (e)=>{
+    let m; try{ m = JSON.parse(e.data); }catch{ return; }
+    if(m.type==='event'){ evt(m.content); return; }
+    if(m.role==='user'){ return; }
+    let node = document.querySelector('[data-stream="cur"]');
+    if(m.type==='text'){
+      if(!node){ node = mk('assistant',''); node.dataset.stream='cur'; add(node); }
+      node.textContent += m.content;
+      logEl.scrollTop = logEl.scrollHeight;
+      if(ttsOn) speak(m.content);
+    } else if(m.type==='control'){
+      // 忽略
+    }
+  };
+  ws.onclose = ()=> evt('连接已关闭');
+};
+
+document.getElementById('send').onclick = sendMsg;
+document.getElementById('input').addEventListener('keydown', e=>{ if(e.key==='Enter') sendMsg(); });
+function sendMsg(){
+  const v = document.getElementById('input').value.trim();
+  if(!v || !ws) return;
+  ws.send(JSON.stringify({role:'user', type:'text', content:v, timestamp:Date.now()}));
+  add(mk('user', v));
+  document.getElementById('input').value='';
+}
+
+document.getElementById('interrupt').onclick = ()=>{
+  if(ws) ws.send(JSON.stringify({role:'user', type:'control', content:'interrupt', timestamp:Date.now()}));
+  evt('已发送打断指令');
+};
+
+document.getElementById('tts').onclick = ()=>{
+  ttsOn = !ttsOn;
+  document.getElementById('tts').textContent = 'TTS: ' + (ttsOn?'开':'关');
+  if(ttsOn && !audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+};
+
+function speak(text){
+  if(!audioCtx) return;
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang='zh-CN'; u.rate=1.05;
+  speechSynthesis.speak(u);
+}
+</script>
+</body>
+</html>

@@ -11,6 +11,7 @@ type DriverProfile struct {
 	LicenseNo     string `gorm:"size:32" json:"licenseNo"`                    // 驾驶证号
 	LicenseExpiry *time.Time `json:"licenseExpiry"`                          // 驾照有效期
 	ServiceScore  float64 `gorm:"default:5" json:"serviceScore"`            // 服务评分
+	ReviewCount   int     `gorm:"default:0" json:"reviewCount"`            // 评价数（工单14）
 	OnlineStatus  string `gorm:"size:20;default:offline" json:"onlineStatus"` // online/offline（工单05：工作状态）
 	VerifyStatus  string `gorm:"size:20;default:pending" json:"verifyStatus"` // pending/approved/rejected 实名审核状态
 }

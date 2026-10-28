@@ -73,6 +73,11 @@ func allModels() []interface{} {
 		// 网约车工单（10/11/15/16/17）
 		&RideOrder{}, &TripBill{}, &OrderAudit{}, &DispatchConfig{}, &DispatchLog{}, &DispatchConfigHistory{},
 		&FloodReport{}, &ShelterPoint{}, &WeatherAlert{}, &IdemKey{}, &TripTrace{},
+		// 工单12/13/14 乘客端域
+		&UserAddress{}, &PaymentMethod{}, &UserFeedback{}, &SOSAlert{},
+		&RideTip{}, &Invoice{}, &RideReview{}, &CancelRecord{},
+		// 工单09：GVA 框架能力（动态菜单、任务审计）
+		&Menu{}, &JobAudit{},
 	}
 }
 

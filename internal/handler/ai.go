@@ -4,10 +4,13 @@ package handler
 import (
 	"errors"
 	"strconv"
+	"strings"
 	"time"
 
+	"ride-hailing/internal/config"
 	"ride-hailing/internal/middleware"
 	"ride-hailing/internal/model"
+	"ride-hailing/internal/pkg/jwtutil"
 	"ride-hailing/internal/pkg/resp"
 	"ride-hailing/internal/pkg/ws"
 	"ride-hailing/internal/service"
@@ -158,9 +161,26 @@ func (h *AIHandler) RedAlertCheck(c *gin.Context) {
 type DHHandler struct{}
 
 // WsDigitalHuman WebSocket 接入点（会话状态每连接独立、防强踢、心跳保活）
+// 鉴权：浏览器原生 WS 无法带自定义头，故支持 Header(Authorization) 或 query(token) 透传。
 func (h *DHHandler) WsDigitalHuman(c *gin.Context) {
-	userID := "dh-" + strconv.FormatUint(uint64(middleware.GetUserID(c)), 10) + "-" + c.Query("sid")
-	if _, ok := ws.Global().Upgrade(c, userID); ok {
+	token := c.Query("token")
+	if token == "" {
+		if ah := c.GetHeader("Authorization"); ah != "" {
+			token = strings.TrimPrefix(ah, "Bearer ")
+		}
+	}
+	if token == "" {
+		resp.Unauthorized(c, "缺少鉴权 token（Header 或 ?token=）")
+		return
+	}
+	claims, err := jwtutil.ParseToken(token, config.Load().JWTSecret)
+	if err != nil {
+		resp.Unauthorized(c, "token 无效或已过期")
+		return
+	}
+	uid := strconv.FormatUint(uint64(claims.UserID), 10)
+	userKey := "dh-" + uid + "-" + c.Query("sid")
+	if _, ok := ws.Global().Upgrade(c, userKey); ok {
 		// 连接生命周期由 hub 管理；会话在 OnMessage/OnClose 中创建销毁
 	}
 }
@@ -168,6 +188,12 @@ func (h *DHHandler) WsDigitalHuman(c *gin.Context) {
 // DhStats 数字人在线会话统计
 func (h *DHHandler) DhStats(c *gin.Context) {
 	resp.OK(c, gin.H{"onlineConnections": ws.Global().OnlineCount()})
+}
+
+// DHStatus 数字人/Coze 智能体配置状态（工单18：前端据此选择本地/云端模式）
+func (h *AIHandler) DHStatus(c *gin.Context) {
+	coze := service.NewCozeClient()
+	resp.OK(c, gin.H{"cozeAvailable": coze.Available(), "mode": map[bool]string{true: "coze", false: "local"}[coze.Available()]})
 }
 
 // ---- 辅助 ----

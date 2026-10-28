@@ -15,11 +15,15 @@ type User struct {
 	Username  string     `gorm:"size:64;uniqueIndex;not null" json:"username"` // 登录名
 	Password  string     `gorm:"size:128;not null" json:"-"`                   // bcrypt 加密存储
 	RealName  string     `gorm:"size:64" json:"realName"`                      // 姓名
+	Nickname  string     `gorm:"size:64" json:"nickname"`                      // 昵称（工单12 账户信息）
+	Avatar    string     `gorm:"size:255" json:"avatar"`                       // 头像 URL（工单12）
 	Phone     string     `gorm:"size:20;index" json:"phone"`                   // 手机号（唯一性校验在服务层）
 	Email     string     `gorm:"size:128" json:"email"`                        // 电子邮件
 	IdCard    string     `gorm:"size:32;index" json:"idCard"`                  // 身份证号（实名制，工单01）
 	Status    string     `gorm:"size:20;index;default:enabled" json:"status"`  // enabled/disabled
 	RegSource string     `gorm:"size:32;default:web" json:"regSource"`         // 注册来源（数据分析用）
+	Balance   float64    `gorm:"default:0" json:"balance"`                     // 账户余额（工单14 打赏即时到账）
+	Points    int        `gorm:"default:0" json:"points"`                      // 积分（工单12 优惠与积分）
 	LastLogin *time.Time `json:"lastLogin"`
 	Roles     []Role     `gorm:"many2many:user_roles;" json:"roles,omitempty"`
 }

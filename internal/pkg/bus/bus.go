@@ -180,4 +180,6 @@ const (
 	EvDriverStatus     = "driver.status"     // 司机上下线广播
 	EvDriverLocation   = "driver.location"   // 司机位置上报（工单11 订单跟踪）
 	EvWeatherAlert     = "weather.alert"     // 天气预警推送（工单10）
+	EvSOS             = "sos.alert"        // 紧急求助（工单13）
+	EvAppPush         = "app.push"         // 应用内推送（乘客/司机/管理员）
 )

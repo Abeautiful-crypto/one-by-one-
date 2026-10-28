@@ -1,6 +1,9 @@
 # 编译产物
 app.exe
 app
+server.exe
+server.exe~
+*.exe~
 
 # SQLite 运行时数据库
 *.db
@@ -10,11 +13,13 @@ app
 # 日志
 server.err
 server.log
+server.out
 
 # 临时测试文件
 coupon_create.json
 stations.json
 test_import.csv
+extract_docx.py
 
 # IDE
 .idea/

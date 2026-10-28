@@ -7,6 +7,7 @@ import (
 	"ride-hailing/internal/handler"
 	"ride-hailing/internal/middleware"
 	"ride-hailing/internal/model"
+	"ride-hailing/internal/pkg/perf"
 	"ride-hailing/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -18,6 +19,9 @@ func Setup(cfg *config.Config) *gin.Engine {
 	r.Use(gin.CustomRecovery(func(c *gin.Context, err interface{}) {
 		c.AbortWithStatus(500)
 	}))
+	// 工单08：运行时监控中间件（采集 QPS/时延到 Prometheus/expvar）
+	perf.Init()
+	r.Use(perf.RequestMetrics())
 
 	authH := &handler.AuthHandler{Cfg: cfg}
 	personH := &handler.PersonnelHandler{}
@@ -33,22 +37,36 @@ func Setup(cfg *config.Config) *gin.Engine {
 	rideH := &handler.DriverAPIHandler{}
 	aiH := &handler.AIHandler{}
 	dhH := &handler.DHHandler{}
+	passengerH := &handler.PassengerHandler{}
+	platformH := &handler.PlatformHandler{}
 
 	api := r.Group("/api/v1")
+
+	// 工单08：Prometheus 指标端点（运行时监控面板数据源）
+	r.GET("/metrics", perf.MetricsHandler())
+	// 工单08：pprof 性能分析接口（仅管理员，防止敏感数据泄露）
+	perf.RegisterPprof(r)
 
 	// ---------- 公开接口 ----------
 	api.POST("/auth/login", authH.Login)
 	api.POST("/auth/register", authH.Register) // 实名制注册（工单01）
+	api.POST("/auth/sms-code", passengerH.SendSmsCode)     // 工单12：发送验证码
+	api.POST("/auth/sms-login", passengerH.SmsLogin)       // 工单12：手机验证码登录
+	api.POST("/auth/reset-password", passengerH.ResetPassword) // 工单12：找回密码
 	api.GET("/share/trip/:token", tripH.GetSharedTrip)
 	api.POST("/analytics/track", anaH.TrackVisit) // 行为埋点
 
-	// 工单19：数字人 WebSocket（登录鉴权；工单10 AI 助手走 REST）
+	// 工单19/18：数字人 WebSocket（登录鉴权；工单10 AI 助手走 REST）
 	service.InitDigitalHuman()   // 注册 WS 消息/断线回调（会话状态管理）
 	service.SeedShelters("上海", []model.ShelterPoint{ // 工单10 示例避雨点
 		{Name: "人民广场地铁站14号口", Lng: 121.4737, Lat: 31.2304, HasRoof: true, CouponValue: 5, FreeWaitMin: 15},
 		{Name: "静安寺枢纽B1", Lng: 121.4453, Lat: 31.2233, HasRoof: true, CouponValue: 5, FreeWaitMin: 15},
 	})
-	api.GET("/ws/dh", middleware.JWTAuth(cfg), dhH.WsDigitalHuman)
+	api.GET("/ws/dh", dhH.WsDigitalHuman) // 数字人会话（支持 Header 或 query 透传 token，浏览器 WS 兼容）
+
+	// 工单18：数字人联调前端（Live2D 渲染由前端 Node 项目负责；此处提供联调页与静态资源）
+	r.Static("/web", "./web")
+	r.GET("/dh", func(c *gin.Context) { c.Redirect(302, "/web/digital-human.html") })
 
 	// ---------- 认证接口 ----------
 	auth := api.Group("", middleware.JWTAuth(cfg))
@@ -95,6 +113,11 @@ func Setup(cfg *config.Config) *gin.Engine {
 			staff.GET("/analytics/orders", anaH.OrderAnalysis)
 			staff.GET("/analytics/conversion", anaH.ConversionAnalysis)
 			staff.GET("/analytics/repurchase", anaH.RepurchaseAnalysis)
+
+			// 工单14：网约车行程评价审核
+			staff.GET("/ride-reviews", passengerH.ListReviews)
+			staff.POST("/ride-reviews/:id/approve", passengerH.ApproveReview)
+			staff.POST("/ride-reviews/:id/reject", passengerH.RejectReview)
 		}
 
 		// 仅 admin
@@ -124,6 +147,7 @@ func Setup(cfg *config.Config) *gin.Engine {
 		auth.GET("/ai/shelters", aiH.Shelters)                 // 避雨上车点推荐
 		auth.POST("/ai/flood-report", aiH.ReportFlood)         // 积水上报+补偿券
 		auth.GET("/ai/red-alert-check", aiH.RedAlertCheck)     // 红色预警安全校验
+		auth.GET("/ai/digital-human/status", aiH.DHStatus)      // 工单18：Coze 配置状态
 
 		// ---------- 工单15/17：司机端上线/大厅/抢单 ----------
 		ride := auth.Group("")
@@ -163,7 +187,36 @@ func Setup(cfg *config.Config) *gin.Engine {
 			adminRide.POST("/dispatch-config/:city", rideH.SaveDispatchConfig)     // 灰度配置
 			adminRide.POST("/dispatch-config/:city/rollback", rideH.RollbackDispatchConfig) // 一键回滚
 			adminRide.GET("/ws/stats", rideH.WsStats)
+
+			// 工单09：GVA 框架能力（定时任务 / 动态菜单 / 审计）
+			adminRide.GET("/jobs", platformH.ListJobs)
+			adminRide.POST("/jobs/:name/run", platformH.RunJob)
+			adminRide.PUT("/jobs/:name/params", platformH.UpdateJobParams)
+			adminRide.GET("/jobs/audits", platformH.JobAudits)
+			adminRide.GET("/menus", platformH.MenuList)
+			adminRide.POST("/menus", platformH.SaveMenu)
+			adminRide.GET("/audit-logs", platformH.AuditLogs)
 		}
+
+		// ---------- 工单12/13/14：乘客端 ----------
+		auth.GET("/me/profile", passengerH.GetProfile)           // 账户信息
+		auth.POST("/me/profile", passengerH.UpdateProfile)        // 个人信息编辑
+		auth.POST("/me/password", passengerH.ChangePassword)      // 安全设置：改密码
+		auth.GET("/me/addresses", passengerH.ListAddresses)       // 常用地址
+		auth.POST("/me/addresses", passengerH.CreateAddress)
+		auth.PUT("/me/addresses/:id", passengerH.UpdateAddress)
+		auth.DELETE("/me/addresses/:id", passengerH.DeleteAddress)
+		auth.GET("/me/payments", passengerH.ListPayments)         // 支付方式管理
+		auth.POST("/me/payments", passengerH.CreatePayment)
+		auth.DELETE("/me/payments/:id", passengerH.DeletePayment)
+		auth.POST("/me/feedback", passengerH.SubmitFeedback)      // 帮助与反馈
+		auth.GET("/me/orders", passengerH.PassengerOrders)        // 行程记录
+		auth.GET("/drivers/nearby", passengerH.NearbyDrivers)     // 附近司机（地图）
+		auth.GET("/drivers/:id", passengerH.DriverDetail)         // 司机详情
+		auth.POST("/sos", passengerH.CreateSOS)                   // 紧急求助
+		auth.POST("/ride-orders/:orderNo/tip", passengerH.TipDriver)     // 打赏
+		auth.POST("/ride-orders/:orderNo/review", passengerH.CreateReview) // 评价
+		auth.POST("/ride-orders/:orderNo/invoice", passengerH.CreateInvoice) // 发票
 
 		// 工单19：数字人会话统计
 		auth.GET("/dh/stats", dhH.DhStats)
@@ -173,7 +226,7 @@ func Setup(cfg *config.Config) *gin.Engine {
 		auth.GET("/trips", tripH.ListTrips)
 		auth.GET("/trips/:id/match", tripH.MatchTrips)  // 自动推荐
 		auth.POST("/trips/:id/share", tripH.ShareTrip)  // 行程分享
-		auth.POST("/sos", tripH.CreateSOS)              // 紧急求助
+		auth.POST("/sos/trip", tripH.CreateSOS)         // 工单01：行程一键求助（与乘客端 /sos 区分）
 
 		// 工单01：司机配置
 		auth.POST("/driver/profile", driverH.SaveDriverProfile)
